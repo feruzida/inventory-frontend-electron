@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Inventory Client</title>
+</head>
+<body>
+
+<h2>Login</h2>
+<input id="user" placeholder="username"><br>
+<input id="pass" type="password" placeholder="password"><br>
+<button onclick="login()">Login</button>
+
+<hr>
+
+<h2>Products</h2>
+<button onclick="loadProducts()">Load Products</button>
+
+<pre id="output"></pre>
+
+<script>
+  const { ipcRenderer } = require('electron');
+
+  ipcRenderer.send('connect-server');
+
+  function login() {
+    const msg = JSON.stringify({
+      action: "login",
+      username: user.value,
+      password: pass.value
+    });
+    ipcRenderer.send('send-data', msg);
+  }
+
+  function loadProducts() {
+    ipcRenderer.send(
+      'send-data',
+      JSON.stringify({ action: "get_products" })
+    );
+  }
+
+  ipcRenderer.on('server-response', (e, data) => {
+    document.getElementById('output').innerText += data + "\n";
+  });
+</script>
+
+</body>
+</html>
