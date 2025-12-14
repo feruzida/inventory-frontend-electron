@@ -34,8 +34,8 @@
 
   function loadProducts() {
     ipcRenderer.send(
-      'send-data',
-      JSON.stringify({ action: "get_products" })
+            'send-data',
+            JSON.stringify({ action: "get_products" })
     );
   }
 

@@ -21,7 +21,7 @@ app.whenReady().then(createWindow);
 
 ipcMain.on('connect-server', () => {
   socket = new net.Socket();
-  socket.connect(5000, '127.0.0.1');
+  socket.connect(8080, '127.0.0.1');
 
   socket.on('data', (data) => {
     win.webContents.send('server-response', data.toString());
@@ -29,5 +29,5 @@ ipcMain.on('connect-server', () => {
 });
 
 ipcMain.on('send-data', (event, msg) => {
-  if (socket) socket.write(msg);
+  if (socket) socket.write(msg + "\n");
 });
