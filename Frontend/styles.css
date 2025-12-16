@@ -1,0 +1,52 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+input {
+    display: block;
+    margin-bottom: 8px;
+    padding: 8px;
+    width: 100%;
+}
+
+button {
+    padding: 8px 12px;
+    margin-right: 6px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+tr.selected {
+    background: #dbeafe;
+}
+
+.error {
+    color: red;
+    margin-top: 8px;
+}
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}

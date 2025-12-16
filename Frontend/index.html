@@ -1,48 +1,67 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Inventory Client</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<!-- ========== LOGIN SECTION ========== -->
+<div id="loginSection" class="card">
+  <h2>Login</h2>
+  <input id="user" placeholder="Username">
+  <input id="pass" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <div id="errorBox" class="error"></div>
+</div>
 
-<h2>Login</h2>
-<input id="user" placeholder="username"><br>
-<input id="pass" type="password" placeholder="password"><br>
-<button onclick="login()">Login</button>
+<!-- ========== APP SECTION ========== -->
+<div id="appSection" style="display:none">
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <span id="roleLabel"></span>
+    <button id="logoutBtn" onclick="logout()">Logout</button>
+  </div>
 
-<hr>
+  <!-- PRODUCTS -->
+  <div class="card">
+    <h2>Products</h2>
+    <button id="loadBtn" onclick="loadProducts()">Load Products</button>
+    <table id="productsTable">
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Price</th>
+        <th>Qty</th>
+      </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-<h2>Products</h2>
-<button onclick="loadProducts()">Load Products</button>
+  <!-- PRODUCT FORM -->
+  <div class="card">
+    <h3>Add / Update Product</h3>
+    <input id="pName" placeholder="Name">
+    <input id="pCategory" placeholder="Category">
+    <input id="pPrice" type="number" placeholder="Price">
+    <input id="pQty" type="number" placeholder="Quantity">
+    <button id="addBtn" disabled onclick="addProduct()">Add</button>
+    <button id="updateBtn" disabled onclick="testUpdate()">Update</button>
+    <button id="deleteBtn" disabled onclick="testDelete()">Deactivate</button>
+  </div>
 
-<pre id="output"></pre>
+  <!-- TRANSACTIONS -->
+  <div class="card">
+    <h3>Transactions</h3>
+    <button id="saleBtn" disabled onclick="sale()">SALE</button>
+    <button id="purchaseBtn" disabled onclick="purchase()">PURCHASE</button>
+  </div>
+</div>
 
-<script>
-  const { ipcRenderer } = require('electron');
-
-  ipcRenderer.send('connect-server');
-
-  function login() {
-    const msg = JSON.stringify({
-      action: "login",
-      username: user.value,
-      password: pass.value
-    });
-    ipcRenderer.send('send-data', msg);
-  }
-
-  function loadProducts() {
-    ipcRenderer.send(
-            'send-data',
-            JSON.stringify({ action: "get_products" })
-    );
-  }
-
-  ipcRenderer.on('server-response', (e, data) => {
-    document.getElementById('output').innerText += data + "\n";
-  });
-</script>
-
+<!-- Renderer Script -->
+<script src="renderer.js"></script>
 </body>
 </html>
