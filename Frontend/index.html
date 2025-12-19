@@ -499,13 +499,16 @@
                     Sale
                   </label>
 
-                  <input type="radio" id="txnTypePurchase" name="txnType" value="Purchase">
-                  <label for="txnTypePurchase" class="segment-label">
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    Purchase
-                  </label>
+                  <div id="purchaseOption">
+                    <input type="radio" id="txnTypePurchase" name="txnType" value="Purchase">
+                    <label for="txnTypePurchase" class="segment-label">
+                      <svg class="icon" viewBox="0 0 24 24">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      Purchase
+                    </label>
+                  </div>
+
                 </div>
               </div>
 
@@ -618,7 +621,7 @@
               <thead>
               <tr>
                 <th>Date & Time</th>
-                <th>Type</th>
+                <th class="text-center">Type</th>
                 <th>Product</th>
                 <th class="text-center">Quantity</th>
                 <th class="text-center">Total Price</th>
@@ -922,7 +925,7 @@
       </div>
 
       <!-- User Activity Reports (Admin Only) -->
-      <div class="card">
+      <div id="userActivitySection" class="card">
         <div class="card-header">
           <h2 class="card-title">User Activity</h2>
           <p style="color: var(--muted-foreground); font-size: 0.875rem; margin-top: 0.25rem;">System user activity tracking</p>

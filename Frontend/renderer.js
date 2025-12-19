@@ -86,6 +86,7 @@ if (user && pass) {
 
 /* ================= AUTH ================= */
 function login() {
+
     errorBox.innerText = "";
     errorBox.style.display = 'none';
 
@@ -345,9 +346,24 @@ function handleServerResponse(response) {
     errorBox.style.display = 'none';
 
     /* ===== AUTH ===== */
+    /* ===== AUTH ===== */
     if (response.data?.role) {
+        const currentUser = response.data.username; // ✅ ВАЖНО
         currentRole = response.data.role;
-        roleLabel.innerText = `${response.data.username} (${currentRole})`;
+
+        roleLabel.innerText = `${currentUser} (${currentRole})`;
+
+        applyRoleVisibility();
+        applyReportsVisibility();
+        applyRolePermissions();
+
+        const purchaseOption = document.getElementById('purchaseOption');
+        const txnTypeSale = document.getElementById('txnTypeSale');
+
+        if (currentRole === 'Cashier') {
+            if (purchaseOption) purchaseOption.style.display = 'none';
+            if (txnTypeSale) txnTypeSale.checked = true;
+        }
 
         const addProductBtn = document.getElementById("addProductBtn");
         if (addProductBtn && !can('add')) {
@@ -364,6 +380,7 @@ function handleServerResponse(response) {
         loadProducts();
         return;
     }
+
 
     /* ===== LOGOUT ===== */
     if (response.message === "Logged out successfully") {
@@ -626,8 +643,8 @@ function renderProducts(products) {
 
 <td class="text-center">
   <button
-    class="action-btn action-btn-delete ${currentRole !== 'Admin' ? 'disabled' : ''}"
-    ${currentRole !== 'Admin'
+    class="action-btn action-btn-delete ${currentRole !== 'Admin' || isDeleted ? 'disabled' : ''}"
+    ${currentRole !== 'Admin' || isDeleted
             ? 'data-tooltip="You don’t have permission to delete" onclick="event.stopPropagation()"'
             : `onclick="event.stopPropagation(); if (confirm('Delete ${escapeHtml(p.name)}?')) {
               selectedProductId = ${p.productId};
@@ -1019,6 +1036,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 🆕 НОВАЯ ФУНКЦИЯ - переключение страниц
 function switchPage(page) {
+    if (page === 'reports' && currentRole === 'Cashier') return;
+    if (page === 'monitoring' && currentRole !== 'Admin') return;
     currentPage = page;
 
     // ⛔ Всегда останавливаем monitoring polling
@@ -1227,7 +1246,7 @@ function renderSuppliers(suppliers) {
     ${isDeleted ? 'Deleted' : 'Active'}
   </span>
 </td>
-            <td class="text-center">
+            <td class="text-ce
                 <span class="badge badge-outline">${s.productCount || 0}</span>
             </td>
             <td class="text-center">
@@ -1357,6 +1376,12 @@ function resetTransactionForm() {
 
 // Confirm transaction from transactions page
 function confirmTransactionFromPage() {
+
+    if (currentRole === 'Cashier' && txnType === 'Purchase') {
+        alert('You do not have permission to perform purchases');
+        return;
+    }
+
     const txnType = document.getElementById('txnTypeSale').checked ? 'Sale' : 'Purchase';
     const productSelect = document.getElementById('txnProduct');
     const productId = productSelect.value;
@@ -1448,15 +1473,15 @@ function renderTransactions(transactions) {
         const badgeClass = txn.txnType === 'Sale' ? 'badge-sale' : 'badge-purchase';
 
         tr.innerHTML = `
-            <td>
-                <div style="line-height: 1.3;">
-                    <div>${dateStr}</div>
-                    <div style="font-size: 0.75rem; color: var(--muted-foreground);">${timeStr}</div>
-                </div>
-            </td>
-            <td>
-                <span class="badge ${badgeClass}">${txn.txnType}</span>
-            </td>
+    <td>
+        <div style="line-height: 1.3;">
+            <div>${dateStr}</div>
+            <div style="font-size: 0.75rem; color: var(--muted-foreground);">${timeStr}</div>
+        </div>
+    </td>
+    <td class="text-center">
+        <span class="badge ${badgeClass}">${txn.txnType}</span>
+    </td>
             <td><strong>${escapeHtml(productName)}</strong></td>
             <td class="text-center">${txn.quantity}</td>
             <td class="text-center">${Number(txn.totalPrice).toLocaleString()}</td>
@@ -1757,7 +1782,6 @@ function changeStockTab(tab) {
 
 // Load all reports data
 function loadReportsData() {
-    // Initialize dates if not set
     if (!reportStartDate || !reportEndDate) {
         changeDateRange('month');
         return;
@@ -1770,8 +1794,13 @@ function loadReportsData() {
     loadStockLevels();
     loadTransactionStats();
     loadSupplierPerformance();
-    loadUserActivity();
+
+    // ✅ ТОЛЬКО ДЛЯ ADMIN
+    if (currentRole === 'Admin') {
+        loadUserActivity();
+    }
 }
+
 
 // Load sales summary
 function loadSalesSummary() {
@@ -2001,4 +2030,49 @@ function formatDate(date) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+}
+
+function applyRoleVisibility() {
+    const reportsNav = document.querySelector('[data-page="reports"]');
+    const monitoringNav = document.querySelector('[data-page="monitoring"]');
+
+    if (currentRole === 'Cashier') {
+        reportsNav?.classList.add('hidden');
+        monitoringNav?.classList.add('hidden');
+    }
+
+    if (currentRole !== 'Admin') {
+        monitoringNav?.classList.add('hidden');
+    }
+}
+function applyRolePermissions() {
+    if (currentRole === 'Cashier') {
+
+        // ❌ Suppliers: запрет CRUD
+        const addSupplierBtn = document.querySelector('[onclick="openSupplierModal()"]');
+        if (addSupplierBtn) addSupplierBtn.style.display = 'none';
+
+        document.querySelectorAll('#suppliersPage .btn-destructive').forEach(btn => {
+            btn.style.display = 'none'; // delete
+        });
+
+        document.querySelectorAll('#suppliersPage .icon-edit, #suppliersPage .edit-btn').forEach(btn => {
+            btn.style.display = 'none'; // edit
+        });
+
+        // ❌ Safety: если вдруг откроют модал
+        window.openSupplierModal = () => {
+            alert('You do not have permission to manage suppliers');
+        };
+    }
+}
+function applyReportsVisibility() {
+    const userActivity = document.getElementById('userActivitySection');
+    if (!userActivity) return;
+
+    if (currentRole !== 'Admin') {
+        userActivity.style.display = 'none';
+    } else {
+        userActivity.style.display = 'block';
+    }
 }
