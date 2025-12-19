@@ -1639,3 +1639,81 @@ body {
         max-height: 250px;
     }
 }
+/* FIX: Supplier Performance column alignment */
+#supplierPerformanceTableBody td:nth-child(1) {
+    text-align: left !important;
+}
+
+#supplierPerformanceTableBody td:nth-child(2),
+#supplierPerformanceTableBody td:nth-child(3),
+#supplierPerformanceTableBody td:nth-child(4) {
+    text-align: center !important;
+}
+
+/* Headers тоже выровнять */
+#reportsPage .card:has(#supplierPerformanceTableBody) th:nth-child(2),
+#reportsPage .card:has(#supplierPerformanceTableBody) th:nth-child(3),
+#reportsPage .card:has(#supplierPerformanceTableBody) th:nth-child(4) {
+    text-align: center !important;
+}
+/* Active Sessions: Role — LEFT aligned */
+#monitoringPage .inventory-table:first-of-type thead th:nth-child(2) {
+    text-align: left;
+    padding-left: 1rem;
+}
+
+/*#monitoringPage .inventory-table:first-of-type tbody td:nth-child(2) {*/
+/*    text-align: left;*/
+/*    padding-left: 1rem;*/
+/*}*/
+
+/* User Activity: Role column - LEFT aligned */
+#reportsPage #userActivityTableBody td:nth-child(2) {
+    text-align: left !important;
+    padding-left: 1rem !important;
+}
+
+#reportsPage .card:has(#userActivityTableBody) thead th:nth-child(2) {
+    text-align: left !important;
+    padding-left: 1rem !important;
+}
+
+/* User Activity: Action Count column - CENTER aligned */
+#reportsPage #userActivityTableBody td:nth-child(3) {
+    text-align: center !important;
+}
+
+#reportsPage .card:has(#userActivityTableBody) thead th:nth-child(3) {
+    text-align: center !important;
+}
+/* USER ACTIVITY – ROLE from CENTER like Word */
+#reportsPage #userActivityTableBody td:nth-child(2),
+#reportsPage .card:has(#userActivityTableBody) thead th:nth-child(2) {
+    text-align: center !important; /* колонка по центру */
+}
+
+/* сам бейдж роли */
+#reportsPage #userActivityTableBody td:nth-child(2) .badge {
+    display: inline-block;
+    text-align: left;              /* текст начинается от центра */
+    padding-left: 0.75rem;         /* аккуратный старт */
+}
+/* USER ACTIVITY – ROLE: start from center WITHOUT moving column */
+#reportsPage #userActivityTableBody td:nth-child(2) {
+    text-align: center !important;   /* колонка остаётся как сейчас */
+}
+
+/* badge НЕ двигает колонку */
+#reportsPage #userActivityTableBody td:nth-child(2) .badge {
+    transform: translateX(0.75rem);  /* визуальный сдвиг от центра */
+}
+/* Active Sessions – Role: tiny left shift, layout untouched */
+#monitoringPage .inventory-table:first-of-type tbody td:nth-child(2) .badge {
+    transform: translateX(-0.4rem); /* 👈 очень аккуратно влево */
+}
+/* Inventory – Delete column: pixel-perfect center */
+#inventoryPage .inventory-table th:last-child,
+#inventoryPage .inventory-table td:last-child {
+    text-align: center !important;
+    vertical-align: middle !important;
+}

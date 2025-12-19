@@ -2,6 +2,8 @@ const { ipcRenderer } = require("electron");
 
 /* ================= DOM ELEMENTS ================= */
 const user = document.getElementById("user");
+const pSupplier = document.getElementById("pSupplier");
+
 const pass = document.getElementById("pass");
 const errorBox = document.getElementById("errorBox");
 let pendingTransaction = null;
@@ -41,6 +43,7 @@ let selectedProductId = null;
 
 
 let allProducts = [];
+let filteredProducts = [];  // 🆕 для search bar
 let allSuppliers = [];
 let filteredSuppliers = [];
 let selectedCategory = "ALL";
@@ -183,8 +186,10 @@ function addProduct() {
         name: pName.value,
         category: pCategory.value,
         unitPrice: Number(pPrice.value),
-        quantity: Number(pQty.value)
+        quantity: Number(pQty.value),
+        supplierId: pSupplier.value ? Number(pSupplier.value) : null
     }));
+
     closeProductModal();
 }
 
@@ -202,8 +207,10 @@ function testUpdate() {
         name: pName.value,
         category: pCategory.value,
         unitPrice: Number(pPrice.value),
-        quantity: Number(pQty.value)
+        quantity: Number(pQty.value),
+        supplierId: pSupplier.value ? Number(pSupplier.value) : null
     }));
+
     closeProductModal();
 }
 
@@ -235,6 +242,7 @@ function resetUI() {
     currentRole = null;
     selectedProductId = null;
     allProducts = [];
+    filteredProducts = []; // 🆕 сброс фильтрованных продуктов
     selectedCategory = "ALL";
 
     document.getElementById("productsTableBody").innerHTML = "";
@@ -259,7 +267,11 @@ function openProductModal(isEdit = false) {
 
     addBtn.style.display = isEdit ? "none" : "inline-flex";
     updateBtn.style.display = isEdit ? "inline-flex" : "none";
-    deleteBtn.style.display = isEdit ? "inline-flex" : "none";
+    deleteBtn.style.display =
+        isEdit && currentRole === 'Admin'
+            ? "inline-flex"
+            : "none";
+
 
     document.getElementById("modalTitle").innerText =
         isEdit ? "Edit Item" : "Add New Item";
@@ -269,6 +281,7 @@ function openProductModal(isEdit = false) {
         pCategory.value = "";
         pPrice.value = "";
         pQty.value = "";
+        pSupplier.value = "";
         selectedProductId = null;
     }
 }
@@ -307,13 +320,53 @@ function applyCategoryFilter() {
 
     selectedCategory = categoryFilter.value;
 
+    // Сбросить поле поиска при смене категории
+    const searchInput = document.getElementById("productSearch");
+    if (searchInput) {
+        searchInput.value = "";
+    }
+
     const filtered =
         selectedCategory === "ALL"
             ? allProducts
             : allProducts.filter(p => p.category === selectedCategory);
 
+    filteredProducts = filtered;
     renderProducts(filtered);
 }
+
+// 🆕 SEARCH BAR для Inventory Page
+function searchProducts() {
+    const searchInput = document.getElementById("productSearch");
+    if (!searchInput) return;
+
+    const searchTerm = searchInput.value.toLowerCase();
+
+    // Если продукты еще не загружены
+    if (!allProducts || allProducts.length === 0) {
+        return;
+    }
+
+    if (searchTerm === "") {
+        filteredProducts = selectedCategory === "ALL"
+            ? allProducts
+            : allProducts.filter(p => p.category === selectedCategory);
+    } else {
+        const baseProducts = selectedCategory === "ALL"
+            ? allProducts
+            : allProducts.filter(p => p.category === selectedCategory);
+
+        filteredProducts = baseProducts.filter(p =>
+            (p.name && p.name.toLowerCase().includes(searchTerm)) ||
+            (p.category && p.category.toLowerCase().includes(searchTerm)) ||
+            (p.price != null && p.price.toString().includes(searchTerm)) ||
+            (p.quantity != null && p.quantity.toString().includes(searchTerm))
+        );
+    }
+
+    renderProducts(filteredProducts);
+}
+
 let buffer = "";
 
 ipcRenderer.on("server-response", (e, chunk) => {
@@ -376,6 +429,7 @@ function handleServerResponse(response) {
         }
 
         resetAfterLogin();
+        loadSuppliers();
         showApp();
         loadProducts();
         return;
@@ -425,12 +479,14 @@ function handleServerResponse(response) {
         allSuppliers = response.data || [];
         filteredSuppliers = allSuppliers;
         renderSuppliers(filteredSuppliers);
+        buildSupplierSelect();
         return;
     }
 
     /* ===== PRODUCTS DATA ===== */
     if (response.message === "Products retrieved") {
         allProducts = response.data || [];
+        filteredProducts = allProducts; // 🆕 инициализация для поиска
         updateCategoryDatalist(allProducts);
         buildCategoryFilter(allProducts);
         applyCategoryFilter();
@@ -598,6 +654,7 @@ function renderProducts(products) {
         const tr = document.createElement("tr");
         if (isDeleted) tr.classList.add("row-deleted");
         tr.onclick = () => {
+
             if (p.active === false) return;
             if (!can('update')) return;
 
@@ -606,6 +663,7 @@ function renderProducts(products) {
             pCategory.value = p.category;
             pPrice.value = p.unitPrice;
             pQty.value = p.quantity;
+            pSupplier.value = p.supplierId ?? "";
             openProductModal(true);
         };
 
@@ -616,6 +674,7 @@ function renderProducts(products) {
             <td><span class="badge badge-outline">${escapeHtml(p.category)}</span></td>
             <td>${Number(p.unitPrice).toLocaleString()}</td>
             <td>${p.quantity}</td>
+            <td>${getSupplierName(p.supplierId)}</td>
             <td>
     <span class="badge ${isDeleted ? "badge-deleted" : (isLow ? "badge-low" : "badge-ok")}">
         ${isDeleted ? "Deleted" : (isLow ? "Low Stock" : "In Stock")}
@@ -630,15 +689,16 @@ function renderProducts(products) {
 </td>
 <td class="text-center">
   <button
-    class="action-btn action-btn-purchase ${!can('purchase') ? 'disabled' : ''}"
-    ${
-            !can('purchase')
-                ? 'data-tooltip="You don’t have permission to purchase" onclick="event.stopPropagation()"'
+  class="action-btn action-btn-purchase ${(!can('purchase') || isDeleted) ? 'disabled' : ''}"
+  ${
+            (!can('purchase') || isDeleted)
+                ? 'data-tooltip="Action not allowed" onclick="event.stopPropagation()"'
                 : `onclick="event.stopPropagation(); handleTransaction(${p.productId}, 'Purchase', '${escapeHtml(p.name)}', ${p.quantity})"`
         }
-  >
-    ➕
-  </button>
+>
+  ➕
+</button>
+
 </td>
 
 <td class="text-center">
@@ -1043,6 +1103,21 @@ function switchPage(page) {
     // ⛔ Всегда останавливаем monitoring polling
     stopMonitoringAutoRefresh();
 
+    // 🆕 Очищаем search bars при уходе со страниц
+    if (currentPage !== 'transactions') {
+        const transactionSearch = document.getElementById('transactionSearch');
+        if (transactionSearch) {
+            transactionSearch.value = '';
+        }
+    }
+
+    if (currentPage !== 'suppliers') {
+        const supplierSearch = document.getElementById('supplierSearch');
+        if (supplierSearch) {
+            supplierSearch.value = '';
+        }
+    }
+
     // Скрыть все страницы
     document.querySelectorAll('.page-content')
         .forEach(p => p.classList.add('hidden'));
@@ -1097,7 +1172,10 @@ function openSupplierModal(isEdit = false) {
 
     addSupplierBtn.style.display = isEdit ? "none" : "inline-flex";
     updateSupplierBtn.style.display = isEdit ? "inline-flex" : "none";
-    deleteSupplierBtn.style.display = isEdit ? "inline-flex" : "none";
+    deleteSupplierBtn.style.display =
+        isEdit && currentRole === 'Admin'
+            ? "inline-flex"
+            : "none";
 
     document.getElementById("supplierModalTitle").innerText =
         isEdit ? "Edit Supplier" : "Add New Supplier";
@@ -1167,6 +1245,10 @@ function updateSupplier() {
 }
 
 function deleteSupplier() {
+    if (currentRole !== 'Admin') {
+        alert('Only admins can delete suppliers');
+        return;
+    }
     if (!selectedSupplierId) return;
 
     if (confirm('Are you sure you want to delete this supplier? This action cannot be undone.')) {
@@ -1180,7 +1262,15 @@ function deleteSupplier() {
 
 
 function searchSuppliers() {
-    const searchTerm = document.getElementById("supplierSearch").value.toLowerCase();
+    const searchInput = document.getElementById("supplierSearch");
+    if (!searchInput) return;
+
+    const searchTerm = searchInput.value.toLowerCase();
+
+    // Если поставщики еще не загружены
+    if (!allSuppliers || allSuppliers.length === 0) {
+        return;
+    }
 
     if (searchTerm === "") {
         filteredSuppliers = allSuppliers;
@@ -1226,57 +1316,60 @@ function renderSuppliers(suppliers) {
             if (isDeleted) tr.classList.add("row-deleted");
 
 
-            tr.onclick = () => {
-                if (s.active === false) return;
-                selectedSupplierId = s.supplierId;
-                document.getElementById("sName").value = s.name;
-                document.getElementById("sContact").value = s.contactInfo;
-                document.getElementById("sEmail").value = s.email || "";
-                document.getElementById("sAddress").value = s.address || "";
-                openSupplierModal(true);
-            };
+
+            if (currentRole !== 'Cashier' && s.active !== false) {
+                tr.onclick = () => {
+                    selectedSupplierId = s.supplierId;
+                    document.getElementById("sName").value = s.name;
+                    document.getElementById("sContact").value = s.contactInfo;
+                    document.getElementById("sEmail").value = s.email || "";
+                    document.getElementById("sAddress").value = s.address || "";
+                    openSupplierModal(true);
+                };
+            }
+
+
 
             tr.innerHTML = `
             <td>${s.supplierId}</td>
             <td><strong>${escapeHtml(s.name)}</strong></td>
             <td>${escapeHtml(s.contactInfo)}</td>
             <td>${s.email ? escapeHtml(s.email) : '-'}</td>
-<td>
-  <span class="badge ${isDeleted ? 'badge-deleted' : 'badge-ok'}">
-    ${isDeleted ? 'Deleted' : 'Active'}
-  </span>
-</td>
-            <td class="text-ce
+            <td>${s.address ? escapeHtml(s.address) : '-'}</td>
+            <td class="text-center">
                 <span class="badge badge-outline">${s.productCount || 0}</span>
             </td>
             <td class="text-center">
-                <button class="action-btn" style="color: #3b82f6;" title="Edit Supplier" 
-                    onclick="event.stopPropagation(); 
-                    selectedSupplierId = ${s.supplierId};
-                    document.getElementById('sName').value = '${escapeHtml(s.name)}';
-                    document.getElementById('sContact').value = '${escapeHtml(s.contactInfo)}';
-                    document.getElementById('sEmail').value = '${s.email ? escapeHtml(s.email) : ''}';
-                    document.getElementById('sAddress').value = '${s.address ? escapeHtml(s.address) : ''}';
-                    openSupplierModal(true);">
-                    ✏️
-                </button>
-            </td>
-            <td class="text-center">
-  <button
-    class="action-btn action-btn-delete ${currentRole !== 'Admin' ? 'disabled' : ''}"
-    title="Delete Supplier"
-    ${
-                currentRole !== 'Admin'
-                    ? 'data-tooltip="You don’t have permission to delete" onclick="event.stopPropagation()"'
-                    : `onclick="event.stopPropagation();
-            if (confirm('Delete ${escapeHtml(s.name)}?')) {
-                selectedSupplierId = ${s.supplierId};
-                deleteSupplier();
-            }"`
+  ${
+                currentRole === 'Cashier' || isDeleted
+                    ? `<span style="opacity:0.3; cursor:not-allowed;" data-tooltip="${isDeleted ? 'Supplier is deleted' : 'Action not allowed'}">✏️</span>`
+                    : `<button
+            class="action-btn"
+            title="Edit Supplier"
+            onclick="event.stopPropagation();
+            selectedSupplierId=${s.supplierId};
+            document.getElementById('sName').value='${escapeHtml(s.name)}';
+            document.getElementById('sContact').value='${escapeHtml(s.contactInfo)}';
+            document.getElementById('sEmail').value='${s.email ? escapeHtml(s.email) : ''}';
+            document.getElementById('sAddress').value='${s.address ? escapeHtml(s.address) : ''}';
+            openSupplierModal(true);"
+        >✏️</button>`
             }
-  >
-    🗑️
-  </button>
+</td>
+            <td class="text-center">
+  ${
+                currentRole !== 'Admin' || isDeleted
+                    ? `<span style="opacity:0.3; cursor:not-allowed;" data-tooltip="Action not allowed">🗑️</span>`
+                    : `<button
+            class="action-btn action-btn-delete"
+            title="Delete Supplier"
+            onclick="event.stopPropagation();
+            if (confirm('Delete ${escapeHtml(s.name)}?')) {
+                selectedSupplierId=${s.supplierId};
+                deleteSupplier();
+            }"
+        >🗑️</button>`
+            }
 </td>
 
         `;
@@ -1376,13 +1469,14 @@ function resetTransactionForm() {
 
 // Confirm transaction from transactions page
 function confirmTransactionFromPage() {
+    const txnType = document.getElementById('txnTypeSale').checked ? 'Sale' : 'Purchase';
+
 
     if (currentRole === 'Cashier' && txnType === 'Purchase') {
         alert('You do not have permission to perform purchases');
         return;
     }
 
-    const txnType = document.getElementById('txnTypeSale').checked ? 'Sale' : 'Purchase';
     const productSelect = document.getElementById('txnProduct');
     const productId = productSelect.value;
     const quantity = Number(document.getElementById('txnQuantity').value);
@@ -1514,6 +1608,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function searchTransactions() {
     const input = document.getElementById('transactionSearch');
+    if (!input) return;
+
     const term = input.value.toLowerCase();
 
     if (!term) {
@@ -1886,14 +1982,17 @@ function renderTopProductsTable(products) {
     products.forEach((product, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>
-                ${index < 3 ? `<span class="badge badge-secondary" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; padding: 0;">${index + 1}</span>` : index + 1}
-            </td>
-            <td>${product.name}</td>
-            <td>${product.category}</td>
-            <td class="text-right">${product.totalSold}</td>
-            <td class="text-right">${formatNumber(product.totalRevenue)}</td>
-        `;
+        <td>
+            ${index < 3
+            ? `<span class="badge badge-secondary" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; padding: 0;">${index + 1}</span>`
+            : `<span style="display: inline-block; width: 24px; text-align: center;">${index + 1}</span>`
+        }
+        </td>
+        <td>${product.name}</td>
+        <td>${product.category}</td>
+        <td class="text-right">${product.totalSold}</td>
+        <td class="text-right">${formatNumber(product.totalRevenue)}</td>
+    `;
         tbody.appendChild(row);
     });
 }
@@ -1975,13 +2074,14 @@ function renderSupplierPerformanceTable(suppliers) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${supplier.name}</td>
-            <td class="text-right">${supplier.productCount}</td>
-            <td class="text-right">${supplier.totalItemsSold}</td>
+            <td class="text-center">${supplier.productCount}</td>
+            <td class="text-center">${supplier.totalItemsSold}</td>
             <td class="text-right">${formatNumber(supplier.totalRevenue)}</td>
         `;
         tbody.appendChild(row);
     });
 }
+
 
 // Render user activity table
 function renderUserActivityTable(users) {
@@ -1997,7 +2097,20 @@ function renderUserActivityTable(users) {
 
     users.forEach(user => {
         const row = document.createElement('tr');
-        const roleClass = user.role === 'Admin' ? 'badge-primary' : 'badge-secondary';
+
+        // Role badge styling based on role type
+        let roleBadgeStyle = '';
+
+        if (user.role === 'Admin') {
+            roleBadgeStyle = 'background-color: #dbeafe; color: #3b82f6; border: 1px solid #93c5fd;';
+        } else if (user.role === 'Stock Manager') {
+            roleBadgeStyle = 'background-color: #fef3c7; color: #f59e0b; border: 1px solid #fcd34d;';
+        } else if (user.role === 'Cashier') {
+            roleBadgeStyle = 'background-color: #d1fae5; color: #10b981; border: 1px solid #6ee7b7;';
+        } else {
+            roleBadgeStyle = 'background-color: var(--muted); color: var(--muted-foreground); border: 1px solid var(--border);';
+        }
+
         const topUserBadge = user.actionCount > 100 ? '<span class="badge badge-secondary" style="margin-right: 0.5rem;">Top User</span>' : '';
         const lastActivity = user.lastAction ? new Date(user.lastAction).toLocaleString('uz-UZ') : 'No activity';
 
@@ -2011,12 +2124,13 @@ function renderUserActivityTable(users) {
                     ${user.username}
                 </div>
             </td>
-            <td><span class="badge ${roleClass}">${user.role}</span></td>
+            <td style="text-align: center;"><span style="${roleBadgeStyle} padding: 0.125rem 0.5rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 500; display: inline-block;">${user.role}</span></td>
             <td class="text-right">${topUserBadge}${user.actionCount}</td>
             <td>${lastActivity}</td>
         `;
         tbody.appendChild(row);
     });
+
 }
 
 // Format number with thousand separators (Uzbek sum format)
@@ -2061,9 +2175,9 @@ function applyRolePermissions() {
         });
 
         // ❌ Safety: если вдруг откроют модал
-        window.openSupplierModal = () => {
-            alert('You do not have permission to manage suppliers');
-        };
+        // window.openSupplierModal = () => {
+        //     alert('You do not have permission to manage suppliers');
+        // };
     }
 }
 function applyReportsVisibility() {
@@ -2075,4 +2189,31 @@ function applyReportsVisibility() {
     } else {
         userActivity.style.display = 'block';
     }
+}
+/* ================= HELPER FUNCTIONS ================= */
+function getSupplierName(supplierId) {
+    if (!supplierId) {
+        return '<span style="color: var(--muted-foreground); font-style: italic;">No supplier</span>';
+    }
+
+    const supplier = allSuppliers.find(s => s.supplierId === supplierId);
+    return supplier ? escapeHtml(supplier.name) : '<span style="color: var(--muted-foreground);">Unknown</span>';
+}
+function buildSupplierSelect() {
+    if (!pSupplier) return;
+    if (!allSuppliers.length) {
+        pSupplier.innerHTML = `<option value="">No suppliers available</option>`;
+        return;
+    }
+
+    pSupplier.innerHTML = `<option value="">No supplier</option>`;
+
+    allSuppliers
+        .filter(s => s.active !== false)
+        .forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s.supplierId;
+            opt.textContent = s.name;
+            pSupplier.appendChild(opt);
+        });
 }

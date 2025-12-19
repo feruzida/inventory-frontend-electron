@@ -338,6 +338,19 @@
         <div class="card-header">
           <h2 class="card-title">Inventory Items</h2>
           <div class="card-actions">
+            <div class="search-box">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+              <input
+                      type="text"
+                      id="productSearch"
+                      placeholder="Search products..."
+                      class="search-input"
+                      oninput="searchProducts()"
+              >
+            </div>
             <select id="categoryFilter" class="select-input" onchange="applyCategoryFilter()">
               <option value="ALL">All Categories</option>
             </select>
@@ -380,6 +393,7 @@
                 <th>Category</th>
                 <th>Price</th>
                 <th>Quantity</th>
+                <th>Supplier</th>
                 <th>Status</th>
                 <th class="text-center">Sale</th>
                 <th class="text-center">Purchase</th>
@@ -584,6 +598,7 @@
 
               <input
                       type="text"
+                      id="transactionSearch"
                       class="search-input"
                       placeholder="Search transactions..."
                       oninput="searchTransactions()"
@@ -911,8 +926,8 @@
               <thead>
               <tr>
                 <th>Supplier Name</th>
-                <th class="text-right">Product Count</th>
-                <th class="text-right">Items Sold</th>
+                <th class="text-center">Product Count</th>
+                <th class="text-center">Items Sold</th>
                 <th class="text-right">Revenue Generated</th>
               </tr>
               </thead>
@@ -1152,6 +1167,15 @@
           <input type="number" id="pQty" min="0" placeholder="0" required>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="pSupplier">Supplier</label>
+          <select id="pSupplier" class="select-input">
+            <option value="">No supplier</option>
+          </select>
+        </div>
+      </div>
+
 
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="closeProductModal()">Cancel</button>
