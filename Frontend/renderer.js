@@ -369,24 +369,25 @@ function searchProducts() {
 
 let buffer = "";
 
-ipcRenderer.on("server-response", (e, chunk) => {
+ipcRenderer.on("server-response", (_, chunk) => {
     buffer += chunk;
 
-    // сервер шлёт JSON через println → всегда заканчивается \n
-    if (!buffer.trim().endsWith("}")) return;
+    const messages = buffer.split("\n");
+    buffer = messages.pop(); // хвост (неполный JSON)
 
-    try {
-        const response = JSON.parse(buffer);
-        buffer = "";
+    for (const msg of messages) {
+        if (!msg.trim()) continue;
 
-        console.log("SERVER RESPONSE:", response);
-        handleServerResponse(response);
-
-    } catch (err) {
-        console.error("JSON parse error:", err, buffer);
-        buffer = "";
+        try {
+            const response = JSON.parse(msg);
+            console.log("SERVER RESPONSE:", response);
+            handleServerResponse(response);
+        } catch (err) {
+            console.error("JSON parse error:", err, msg);
+        }
     }
 });
+
 function handleServerResponse(response) {
     /* ===== ERROR ===== */
     if (!response.success) {
