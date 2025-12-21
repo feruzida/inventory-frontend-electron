@@ -281,9 +281,9 @@
       </div>
     </div>
 
-    <!-- 📦 INVENTORY PAGE (таблица + CRUD + транзакции) -->
+    <!-- 📦 INVENTORY PAGE-->
     <div id="inventoryPage" class="page-content hidden">
-      <!-- Statistics Cards (копия для Inventory) -->
+      <!-- Statistics Cards -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-header">
@@ -336,7 +336,7 @@
       <!-- Inventory Table Card -->
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">Inventory Items</h2>
+          <h2 class="card-title" id="inventoryTitle">Inventory Items</h2>
           <div class="card-actions">
             <div class="search-box">
               <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -354,7 +354,14 @@
             <select id="categoryFilter" class="select-input" onchange="applyCategoryFilter()">
               <option value="ALL">All Categories</option>
             </select>
-            <button class="btn btn-outline" onclick="loadProducts()">
+            <button class="btn btn-outline" onclick="clearSupplierFilter()" style="display: none;" id="clearSupplierFilterBtn">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              Clear Filter
+            </button>
+            <button class="btn btn-outline" onclick="refreshInventory()">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <polyline points="1 20 1 14 7 14"></polyline>
@@ -362,7 +369,7 @@
               </svg>
               Refresh
             </button>
-            <button id="addProductBtn" class="btn btn-primary" onclick="openProductModal()">
+            <button id="addProductBtn" class="btn btn-primary">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -417,8 +424,7 @@
       </div>
     </div>
 
-    <!-- 🏢 SUPPLIERS PAGE (заглушка) -->
-    <!-- 🢠SUPPLIERS PAGE -->
+    <!-- 🏢 SUPPLIERS PAGE  -->
     <div id="suppliersPage" class="page-content hidden">
       <div class="card">
         <div class="card-header">
@@ -466,6 +472,7 @@
                 <th>Email</th>
                 <th>Address</th>
                 <th class="text-center">Products</th>
+                <th class="text-center">View</th>
                 <th class="text-center">Edit</th>
                 <th class="text-center">Delete</th>
               </tr>
@@ -489,7 +496,6 @@
       </div>
     </div>
 
-    <!-- 💳 TRANSACTIONS PAGE (заглушка) -->
     <!-- 💳 TRANSACTIONS PAGE -->
     <div id="transactionsPage" class="page-content hidden">
 
@@ -605,18 +611,30 @@
               />
             </div>
 
-
-
             <!-- Today / All -->
             <div class="segmented-control-filter">
-              <input type="radio" id="filterToday" name="txnFilter" value="today" checked onchange="applyTransactionFilter()">
-              <label for="filterToday" class="segment-label">Today</label>
+            <input type="radio" id="filterToday" name="txnFilter" value="today" checked onchange="applyTransactionFilter()">
+            <label for="filterToday" class="segment-label">Today</label>
 
-              <input type="radio" id="filterAll" name="txnFilter" value="all" onchange="applyTransactionFilter()">
-              <label for="filterAll" class="segment-label">All</label>
+            <input type="radio" id="filterAll" name="txnFilter" value="all" onchange="applyTransactionFilter()">
+            <label for="filterAll" class="segment-label">All</label>
+
+            <input type="radio" id="filterCustom" name="txnFilter" value="custom" onchange="applyTransactionFilter()">
+            <label for="filterCustom" class="segment-label">Custom Range</label>
+          </div>
+
+            <div id="dateRangeInputs" style="display: none; gap: 0.5rem;">
+              <input type="date" id="txnStartDate" class="select-input" style="width: auto;">
+              <span style="color: var(--muted-foreground);">to</span>
+              <input type="date" id="txnEndDate" class="select-input" style="width: auto;">
+              <button class="btn btn-primary" onclick="loadTransactionsByRange()">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Apply
+              </button>
             </div>
 
-            <!-- Refresh -->
             <button class="btn btn-outline" onclick="loadTransactions()">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="23 4 23 10 17 10"></polyline>
@@ -625,7 +643,6 @@
               </svg>
               Refresh
             </button>
-
           </div>
 
         </div>
@@ -694,9 +711,6 @@
           </button>
         </div>
       </div>
-
-
-      <!-- Sales Overview Cards -->
       <div>
         <h2 style="margin-bottom: var(--spacing-4);">Sales Overview</h2>
         <div class="stats-grid" style="margin-bottom: var(--spacing-6);">
@@ -710,7 +724,6 @@
             <div class="stat-value" id="reportTotalRevenue">0</div>
             <p class="stat-description" id="reportTotalTransactions">0 transactions</p>
           </div>
-
           <div class="stat-card">
             <div class="stat-header">
               <span class="stat-title">Total Transactions</span>
@@ -723,7 +736,6 @@
             <div class="stat-value" id="reportTotalTxns">0</div>
             <p class="stat-description">Sales completed</p>
           </div>
-
           <div class="stat-card">
             <div class="stat-header">
               <span class="stat-title">Total Items Sold</span>
@@ -975,8 +987,7 @@
 
     </div>
 
-    <!-- 🔧 MONITORING PAGE (заглушка, только для Admin) -->
-    <!-- 🔧 MONITORING PAGE (только для Admin) -->
+    <!-- 🔧 MONITORING PAGE -->
     <div id="monitoringPage" class="page-content hidden">
 
       <!-- Page Header -->
@@ -1122,7 +1133,6 @@
           </div>
         </div>
       </div>
-
     </div>
   </main>
 </div>
@@ -1159,7 +1169,6 @@
           >
 
           <datalist id="categoryList">
-            <!-- заполняется из JS -->
           </datalist>
 
         </div>

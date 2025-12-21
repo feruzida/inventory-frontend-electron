@@ -141,7 +141,6 @@ body {
     flex-wrap: wrap;
 }
 
-/* НОВЫЙ КОД - ДОБАВИТЬ */
 .header-left {
     display: flex;
     align-items: center;
@@ -879,7 +878,6 @@ body {
 .btn.disabled:hover::after {
     opacity: 1;
 }
-/* Центр для колонок с действиями */
 .inventory-table td:nth-child(7),
 .inventory-table td:nth-child(8),
 .inventory-table td:nth-child(9),
@@ -890,7 +888,6 @@ body {
     vertical-align: middle;
 }
 
-/* Quantity тоже по центру */
 .inventory-table td:nth-child(5),
 .inventory-table th:nth-child(5) {
     text-align: center;
@@ -1034,14 +1031,12 @@ body {
     color: var(--foreground);
     box-shadow: var(--shadow-sm);
 }
-/* 🔥 Search box ТОЛЬКО для Transactions */
 #transactionsPage .search-box {
-    border-radius: 8px;       /* компактнее */
+    border-radius: 8px;
 }
 
-/* 🔥 Search input — одинаковый отступ как у Suppliers */
 #transactionsPage .search-input {
-    padding: 0.5rem 0.75rem 0.5rem 2.5rem; /* ← ТО ЖЕ САМОЕ */
+    padding: 0.5rem 0.75rem 0.5rem 2.5rem;
     font-size: 0.875rem;
     width: 200px;
 }
@@ -1208,32 +1203,15 @@ body {
         opacity: 0.5;
     }
 }
-/* Active Sessions: Role column - LEFT ALIGNED */
-/*#activeSessionsTableBody td:nth-child(2) {*/
-/*    text-align: left !important;*/
-/*    padding-left: 1rem !important;*/
-/*}*/
-/* Active Sessions: Role — LEFT, аккуратно */
-/*#activeSessionsTableBody td:nth-child(2) {*/
-/*    display: flex;*/
-/*    justify-content: flex-start; !* ⬅️ влево *!*/
-/*    align-items: center;*/
-/*    padding-left: 0.75rem;       !* аккуратный отступ *!*/
-/*}*/
-
 #monitoringPage .inventory-table:first-of-type thead th:nth-child(2) {
     text-align: left;
     padding-left: 0.75rem;
 }
-
-
 /* Active Sessions: Role header - LEFT ALIGNED */
 #monitoringPage .inventory-table:first-of-type thead th:nth-child(2) {
     text-align: left !important;
     padding-left: 1rem !important;
 }
-
-
 
 /* ================= UTILITIES ================= */
 .hidden {
@@ -1485,7 +1463,7 @@ body {
 
 .category-progress {
     height: 8px;
-    background-color: var(--muted); /* светлый серый */
+    background-color: var(--muted);
     border-radius: 4px;
     overflow: hidden;
 }
@@ -1497,7 +1475,7 @@ body {
     background: linear-gradient(
             90deg,
             #3b82f6,   /* primary */
-            #8b5cf6    /* мягкий фиолетовый */
+            #8b5cf6
     );
     transition: width 0.3s ease;
 }
@@ -1639,7 +1617,6 @@ body {
         max-height: 250px;
     }
 }
-/* FIX: Supplier Performance column alignment */
 #supplierPerformanceTableBody td:nth-child(1) {
     text-align: left !important;
 }
@@ -1650,7 +1627,6 @@ body {
     text-align: center !important;
 }
 
-/* Headers тоже выровнять */
 #reportsPage .card:has(#supplierPerformanceTableBody) th:nth-child(2),
 #reportsPage .card:has(#supplierPerformanceTableBody) th:nth-child(3),
 #reportsPage .card:has(#supplierPerformanceTableBody) th:nth-child(4) {
@@ -1661,11 +1637,6 @@ body {
     text-align: left;
     padding-left: 1rem;
 }
-
-/*#monitoringPage .inventory-table:first-of-type tbody td:nth-child(2) {*/
-/*    text-align: left;*/
-/*    padding-left: 1rem;*/
-/*}*/
 
 /* User Activity: Role column - LEFT aligned */
 #reportsPage #userActivityTableBody td:nth-child(2) {
@@ -1689,31 +1660,55 @@ body {
 /* USER ACTIVITY – ROLE from CENTER like Word */
 #reportsPage #userActivityTableBody td:nth-child(2),
 #reportsPage .card:has(#userActivityTableBody) thead th:nth-child(2) {
-    text-align: center !important; /* колонка по центру */
+    text-align: center !important;
 }
 
-/* сам бейдж роли */
 #reportsPage #userActivityTableBody td:nth-child(2) .badge {
     display: inline-block;
-    text-align: left;              /* текст начинается от центра */
-    padding-left: 0.75rem;         /* аккуратный старт */
+    text-align: left;
+    padding-left: 0.75rem;
 }
 /* USER ACTIVITY – ROLE: start from center WITHOUT moving column */
 #reportsPage #userActivityTableBody td:nth-child(2) {
-    text-align: center !important;   /* колонка остаётся как сейчас */
+    text-align: center !important;
 }
 
-/* badge НЕ двигает колонку */
 #reportsPage #userActivityTableBody td:nth-child(2) .badge {
-    transform: translateX(0.75rem);  /* визуальный сдвиг от центра */
+    transform: translateX(0.75rem);
 }
 /* Active Sessions – Role: tiny left shift, layout untouched */
 #monitoringPage .inventory-table:first-of-type tbody td:nth-child(2) .badge {
-    transform: translateX(-0.4rem); /* 👈 очень аккуратно влево */
+    transform: translateX(-0.4rem);
 }
 /* Inventory – Delete column: pixel-perfect center */
 #inventoryPage .inventory-table th:last-child,
 #inventoryPage .inventory-table td:last-child {
     text-align: center !important;
     vertical-align: middle !important;
+}
+.badge-out {
+    background-color: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+/* Date Range Inputs */
+#dateRangeInputs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#dateRangeInputs input[type="date"] {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 0.875rem;
+}
+
+#dateRangeInputs input[type="date"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
